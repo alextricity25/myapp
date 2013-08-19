@@ -11,11 +11,15 @@ echo "IP of chef server is: $2";
 
 curl -L https://www.opscode.com/chef/install.sh | sudo bash 
 mkdir -p /etc/chef 
-sudo cat > /etc/chef/client.rb <<EOF
+if [ -e /etc/chef/client.rb ]; 
+	then 
+		rm -rf /etc/chef/client.rb
+fi 
+cat > /etc/chef/client.rb <<EOF
 log_level	:info 
 log_location	STDOUT	
-chef_server_url '$1' 
-validation_client_name 'chef-validator'A
+chef_server_url 'https://$1/' 
+validation_client_name 'chef-validator'
 EOF 
 
 echo "$2	$1" >> /etc/hosts; 
