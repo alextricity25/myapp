@@ -24,5 +24,5 @@ EOF
 
 echo "$2	$1" >> /etc/hosts; 
 echo "Please copy the chef-validator.pem file from the chef server using the command:"; 
-echo "scp root@$1:/etc/chef-server/chef-validator.pem ~/.chef/validation.pem"; 
+echo "scp root@$1:/etc/chef-server/chef-validator.pem /etc/chef/validation.pem"; 
 
