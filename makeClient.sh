@@ -18,7 +18,7 @@ fi
 cat > /etc/chef/client.rb <<EOF
 log_level	:info 
 log_location	STDOUT	
-chef_server_url 'https://$1/' 
+chef_server_url 'https://${1}/' 
 validation_client_name 'chef-validator'
 EOF 
 
