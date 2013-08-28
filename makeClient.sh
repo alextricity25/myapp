@@ -19,7 +19,7 @@ cat > /etc/chef/client.rb <<EOF
 log_level	:info 
 log_location	STDOUT	
 chef_server_url 'https://${1}/' 
-validation_client_name 'chef-validator'
+validation_client_name "chef-validator"
 EOF 
 
 echo "$2	$1" >> /etc/hosts; 
