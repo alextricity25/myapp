@@ -1,0 +1,174 @@
+#! /bin/bash
+#
+# author sudodus alias nio-wiklund at launchpad
+#
+
+bs=4096
+count=256
+cnt=
+target=
+source="$1"
+
+if [ "$(whoami)" != "root" ] || [ "$#" != 1 ]
+    then
+     echo "Usage:"
+      if [ "$#" != 1 ]
+           then
+             echo "---- Make a USB install device from 'file.iso' -------"
+               echo "sudo $0 file.iso"
+                 echo "---- Make a USB install device from 'file.img.gz' ----"
+                   echo "sudo $0 file.img.gz"
+                     echo "---- Wipe the USB device (may take long time) --------"
+                       echo "sudo $0 wipe-all"
+                         echo "---- Wipe the first megabyte (MibiByte) --------------"
+                           echo "sudo $0 wipe-1"
+                            else
+                                  echo "sudo $0 $1"
+                                   fi
+                                    exit
+                                    fi
+                                    if [ "$2" != "" ]
+                                        then
+                                         echo ":-( Use no extra parameters :-("
+                                          exit
+                                          elif [ "${1/.iso}.iso" != "$1" ] && [ "${1/.img.gz}.img.gz" != "$1" ]
+                                          then
+                                           if [ "$1" == "wipe-all" ] || [ "$1" == "/dev/zero" ]
+                                                then
+                                                  echo "Wipe the whole device ... :"
+                                                    source="/dev/zero"
+                                                     elif [ "$1" == "wipe-1" ] || [ "$1" == "wipe1" ]
+                                                      then
+                                                        echo "Wipe the first megabyte (MibiByte) ... :"
+                                                          source="/dev/zero"
+                                                            cnt=" count=$count"
+                                                             else
+                                                                   echo ":-( $1 is neither an iso file or an img.gz file :-("
+                                                                     exit
+                                                                      fi
+                                                                      elif [ ! -f "$1" ]
+                                                                      then
+                                                                       echo ":-( $1 is not found :-("
+                                                                        exit
+                                                                        fi
+
+#if [ "$source" != "/dev/zero" ]
+if [ "${1/.iso}.iso" == "$1" ]
+    then
+     iso=$(mktemp -d)
+      #echo "$iso"
+       #echo "$source"
+        
+         echo "The iso file SHOULD BE loop mounted on a temporary file READ-ONLY:"
+          sleep 1
+           mount -o loop -t auto "$source" "$iso"
+            string="$(blkid /dev/loop0|sed s/.*L=//)"
+             label="$(echo "$string" |sed s/\ T.*//)"
+              sleep 1
+               umount "$iso"
+                rmdir "$iso"
+                 sync
+
+                  target="$(blkid | grep "$label" |sed s/.:.*// |grep "/dev/sd")"
+                   #echo "string from blkid ... : $string"
+                    #echo "label:  $label"
+                     #echo "target: $target"
+                      #exit
+                      fi
+
+                      if [ "$target" != "" ]
+                          then
+                           echo "Install to ${target}? (y/n)"
+                            read ans
+                             if [ "$ans" == "y" ]
+                                  then
+                                    for k in $(grep $target /etc/mtab|sed s#\ /.*##) ; do umount $k; if [ "$?" == "1" ];then busy=1;fi; done
+                                          if [ "$busy" == "1" ]
+                                                then
+                                                   echo ":-( Could not unmount $j because file system on device is busy :-("
+                                                     else
+                                                            echo "dd if=$source of=$target bs=4096 ..."
+                                                               dd if="$source" of="$target" bs=$bs
+                                                                  echo ":-)  The $label USB device is re-cloned  :-)"
+                                                                    fi
+                                                                     fi 
+                                                                     else
+
+                                                                          if [ "$source" == "/dev/zero" ]
+                                                                               then
+                                                                                 echo "Do you want to wipe the USB device? (y/n)"
+                                                                                  elif [ "${1/.iso}.iso" == "$1" ]
+                                                                                   then
+                                                                                     echo ":-\  The $label USB device is not found  :-/"
+                                                                                       echo "     Do you want to make a new one? (y/n)"
+                                                                                        elif [ "${1/.img.gz}.img.gz" == "$1" ]
+                                                                                         then
+                                                                                           echo "Do you want to clone $1 to the USB device? (y/n)"
+                                                                                            else
+                                                                                                  echo "Bad choice -- exit"
+                                                                                                    exit
+                                                                                                     fi
+                                                                                                      read ans
+                                                                                                       if [ "$ans" == "y" ]
+                                                                                                             then
+                                                                                                                hlptxt="/tmp/help-mkusb.txt"
+                                                                                                                   echo "sudo lshw -class disk #####" > "$hlptxt"
+                                                                                                                      lshw -class disk >> "$hlptxt"
+                                                                                                                         echo "lsusb|sort -k 4,4 -k 1 #####" >> "$hlptxt"
+                                                                                                                            lsusb|sort -k 4,4 -k 1 >> "$hlptxt"
+                                                                                                                               echo "sudo fdisk -lu 2>/dev/null|grep "/dev/sd"|sort #####" >> "$hlptxt"
+                                                                                                                                  fdisk -lu 2>/dev/null|grep "/dev/sd"|sort >> "$hlptxt"
+                                                                                                                                     echo "parted -ls #####" >> "$hlptxt"
+                                                                                                                                        parted -ls  >> "$hlptxt"
+                                                                                                                                           echo "blkid|sort #####" >> "$hlptxt"
+                                                                                                                                              blkid|sort >> "$hlptxt"
+                                                                                                                                                 echo "df|grep "/dev/sd"|sort #####" >> "$hlptxt"
+                                                                                                                                                    df|grep "/dev/sd"|sort >> "$hlptxt"
+                                                                                                                                                       echo "***  WARNING: the device will be completely overwritten  ***"
+                                                                                                                                                          echo "     Use the info in the xterm window (less $hlptxt)"
+                                                                                                                                                             xterm -geometry 120x40 -title "less $hlptxt" -e less "$hlptxt" &
+                                                                                                                                                                echo "***  Unmount the device if mounted  ************************"
+                                                                                                                                                                   echo " "
+                                                                                                                                                                      for i in /dev/sd?; do sudo parted -ls|grep -B1 "$i"|tr '\n' '\t';echo "";done
+                                                                                                                                                                             for i in $(find /sys/devices -name "*sd?"|grep usb|sed s#.*/##)
+                                                                                                                                                                                    do
+                                                                                                                                                                                            fdisk -lu /dev/$i 2>/dev/null|grep "Disk /dev"
+                                                                                                                                                                                               done|sed s/^/USB\ /|sort
+                                                                                                                                                                                                  echo " "
+                                                                                                                                                                                                     echo "     Edit if necessary [one of] the following lines"
+                                                                                                                                                                                                        echo "     and paste it as a command!"
+                                                                                                                                                                                                           echo "     Only USB devices are listed, if found."
+                                                                                                                                                                                                              echo "     Otherwise, a template is offered with"
+                                                                                                                                                                                                                 echo "     ... of=/dev/sdX  to be edited."
+                                                                                                                                                                                                                    echo " "
+                                                                                                                                                                                                                       usbdevice=0
+                                                                                                                                                                                                                          for j in $(for i in $(find /sys/devices -name "*sd?"|grep usb|sed s#.*/##)
+                                                                                                                                                                                                                                            do
+                                                                                                                                                                                                                                                                fdisk -lu /dev/$i 2>/dev/null|grep "Disk /dev"|sed -e s/:.*// -e s/.*\ //
+                                                                                                                                                                                                                                                                              done|sort)
+                                                                                                                                                                                                                                 do
+                                                                                                                                                                                                                                         for k in $(grep $j /etc/mtab|sed s#\ /.*##) ; do umount $k; if [ "$?" == "1" ];then busy=1;fi ;done
+                                                                                                                                                                                                                                                 if [ "$busy" == "1" ]
+                                                                                                                                                                                                                                                         then
+                                                                                                                                                                                                                                                              echo "Could not unmount $j because file system on device is busy"
+                                                                                                                                                                                                                                                                  else
+                                                                                                                                                                                                                                                                           if [ "${1/.img.gz}.img.gz" == "$1" ]
+                                                                                                                                                                                                                                                                                    then
+                                                                                                                                                                                                                                                                                          echo "sudo zcat $source|sudo dd bs=${bs} of=$j"
+                                                                                                                                                                                                                                                                                               else
+                                                                                                                                                                                                                                                                                                         echo "sudo dd if="$source" bs=${bs}$cnt of=$j"
+                                                                                                                                                                                                                                                                                                              fi
+                                                                                                                                                                                                                                                                                                                  fi
+                                                                                                                                                                                                                                                                                                                      usbdevice=1
+                                                                                                                                                                                                                                                                                                                         done
+                                                                                                                                                                                                                                                                                                                            if [ $usbdevice == 0 ]
+                                                                                                                                                                                                                                                                                                                                   then
+                                                                                                                                                                                                                                                                                                                                       if [ "${1/.img.gz}.img.gz" == "$1" ]
+                                                                                                                                                                                                                                                                                                                                               then
+                                                                                                                                                                                                                                                                                                                                                    echo "sudo zcat $source|sudo dd bs=${bs} of=/dev/sdX"
+                                                                                                                                                                                                                                                                                                                                                        else
+                                                                                                                                                                                                                                                                                                                                                                 echo "sudo dd if="$source" bs=${bs}$cnt of=/dev/sdX"
+                                                                                                                                                                                                                                                                                                                                                                     fi
+                                                                                                                                                                                                                                                                                                                                                                        fi
+                                                                                                                                                                                                                                                                                                                                                                         fi
+                                                                                                                                                                                                                                                                                                                                                                         fi
