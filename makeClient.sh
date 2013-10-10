@@ -15,12 +15,12 @@ if [ -e /etc/chef/client.rb ];
 	then 
 		rm -rf /etc/chef/client.rb
 fi 
-cat > /etc/chef/client.rb <<EOF
+cat > /etc/chef/client.rb <<endmsg
 log_level	:info 
 log_location	STDOUT	
-chef_server_url 'https://${1}/' 
+chef_server_url 'https://$1/' 
 validation_client_name 'chef-validator'
-EOF 
+endmsg
 
 echo "$2	$1" >> /etc/hosts; 
 echo "Please copy the chef-validator.pem file from the chef server using the command:"; 
