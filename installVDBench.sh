@@ -16,8 +16,12 @@ java -version
 
 # Installing VDBench 
 mkdir ./vdbench 
-wget http://sourceforge.net/projects/vdbench/files/vdbench502.tar/download ./vdbench
+wget http://sourceforge.net/projects/vdbench/files/vdbench502.tar/download -O ./vdbench/download
 tar -xvf ./vdbench/download -C ./vdbench
+
+#installing csh 
+apt-get install csh -y 
+chsh -s `which csh`
 
 
 
