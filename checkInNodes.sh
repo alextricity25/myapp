@@ -1,9 +1,9 @@
 #!/bin/bash
 
 #Check number of arguments for correct usage 
-if [ $# -ne 3 ]; 
+if [ $# -ne 4 ]; 
 	then 
-	echo "./checkInNodes.sh <iplist.txt> <chef-server-ip> <chef-server-hostname>"
+	echo "./checkInNodes.sh <iplist.txt> <chef-server-ip> <chef-server-hostname> <environment_name>"
 	exit; 
 fi 
 
@@ -32,5 +32,8 @@ for line in `cat $1`; do
 	scp /etc/chef-server/chef-validator.pem root@$line:/etc/chef/validation.pem;
 	echo "-----------Checking in $line with chef-server"
 	ssh root@$line "chef-client"
+	echo "-----------Setting environment of $line to $4"
+	knife exec -E 'nodes.transform("chef_environment:_default") { |n| n.chef_environment("$5") }'
 	echo $line; 
+	
 done;
