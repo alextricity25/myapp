@@ -1,8 +1,12 @@
 #!/bin/bash 
 
-#This script takes in a variable number of serial codes and deletes their respective razor active model. It must be ran on a machine with razor. 
+#This script takes in a variable number of serial codes and deletes their respective razor active model. It must be ran on a machine with razor installed
 
-
+if [ $# -lt 1 ]; 
+    then 
+    echo "./removeActiveModel <SerialNumber> [SerialNumber] .." 
+    exit; 
+fi
 razorPath=$(which razor)
 
 
@@ -34,6 +38,7 @@ do
     for ((i=0;i<=${#activeModelNodeUUID[@]}-1;i++)); do 
        isActiveModel=`razor node ${activeModelNodeUUID[i]} -f attrib | grep -oE "$serialCode"`
        #echo "$isActiveModel"
+       #If the Node does not match the serial number, then isActiveModel will be empty, otherwise, it did match.
        if [ -n "$isActiveModel" ]
        then 
            echo "Found active model with serial number: $isActiveModel"
