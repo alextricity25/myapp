@@ -32,8 +32,9 @@ for line in `cat $1`; do
 	scp /etc/chef-server/chef-validator.pem root@$line:/etc/chef/validation.pem;
 	echo "-----------Checking in $line with chef-server"
 	ssh root@$line "chef-client"
-	echo "-----------Setting environment of $line to $4"
-	knife exec -E 'nodes.transform("chef_environment:_default") { |n| n.chef_environment("$5") }'
 	echo $line; 
 	
 done;
+
+echo "-----------Setting environment of $line to $4"
+knife exec -E 'nodes.transform("chef_environment:_default") { |n| n.chef_environment("$5") }'

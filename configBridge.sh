@@ -35,16 +35,10 @@ iface br-eth0 inet static
 	nameserver 8.8.8.8
 endmsg
 
-echo "-------------Flushing eth0 for..$ipaddr" 
-ssh root@$ipaddr "ip addr flush dev eth0" 
 echo "-------------Copying interface file to remote machine $ipaddr" 
 scp /tmp/interfaces root@$ipaddr:/etc/network/interfaces
-echo "-------------Restarting network services on $ipaddr" 
-ssh root@$ipaddr "/etc/init.d/networking restart"
-echo "-------------bringing up br-eth0 on $ipaddr.." 
-ssh root@$ipaddr "ifup br-eth0"
-echo "-------------Creating bridge on $ipaddr..." 
-ssh root@$ipaddr "/usr/bin/ovs-vsctl add-port br-eth0 eth0" 
+echo "-------------Flushing eth0 for..$ipaddr, restarting networking, bringing up bridge."
+ssh root@$ipaddr "ip addr flush dev eth0;/etc/init.d/networking restart;ifup br-eth0; ovs-vsctl add-port br-eth0 eth0"
 echo "------------------------------------------------" 
 echo "Now try sshing into the machine and pingining 8.8.8.8"
 
