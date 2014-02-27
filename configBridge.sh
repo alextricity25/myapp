@@ -30,7 +30,7 @@ iface eth0 inet manual
 
 iface br-eth0 inet static 
 	address $ipaddr
-	netmask 255.255.255.128
+	netmask 255.255.255.0
 	gateway 10.127.83.1
 	nameserver 8.8.8.8
 endmsg
