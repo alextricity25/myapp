@@ -25,8 +25,8 @@ iface lo inet loopback
 # The primary network interface 
 auto eth0
 iface eth0 inet manual 
-	up ip l s $IFACE up
-	down ip l s $IFACE down 
+	up ip l s \$IFACE up
+	down ip l s \$IFACE down 
 
 iface br-eth0 inet static 
 	address $ipaddr
