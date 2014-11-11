@@ -1,0 +1,148 @@
+---
+# Copyright 2014, Rackspace US, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# This is the md5 of the environment file
+# this will ensure consistency when deploying.
+environment_version: dc4cd5fe9c07eee223e8bbb1c5bbaad5
+
+# User defined CIDR used for containers
+# Global cidr/s used for everything.
+cidr_networks:
+  # Cidr used in the Management network
+  container: 10.127.83.0/24
+  # Cidr used in the Service network
+  # Cidr used in the VM network
+  tunnel: 10.127.83.0/24
+  # Cidr used in the Storage network
+
+# User defined list of consumed IP addresses that may intersect 
+# with the provided CIDR.
+used_ips:
+  - 10.127.83.1,10.127.83.24
+  - 10.127.83.45
+  - 10.127.83.100,10.127.83.102
+  - 10.127.83.118,10.127.83.255
+
+# As a user you can define anything that you may wish to "globally"
+# override from within the rpc_deploy configuration file. Anything 
+# specified here will take precedence over anything else any where.
+global_overrides:
+  # Internal Management vip address
+  internal_lb_vip_address: 10.127.83.11
+  # External DMZ VIP address
+  external_lb_vip_address: 10.127.83.11
+  # Bridged interface to use with tunnel type networks
+  tunnel_bridge: "br-mgmt"
+  # Bridged interface to build containers with
+  management_bridge: "br-mgmt"
+  # Define your Add on container networks.
+  #  group_binds: bind a provided network to a particular group
+  #  container_bridge: instructs inventory where a bridge is plugged
+  #                    into on the host side of a veth pair
+  #  container_interface: interface name within a container
+  #  ip_from_q: name of a cidr to pull an IP address from
+  #  type: Networks must have a type. types are: ["raw", "vxlan", "flat", "vlan"]
+  #  range: Optional value used in "vxlan" and "vlan" type networks
+  #  net_name: Optional value used in mapping network names used in neutron ml2
+  # You must have a management network.
+  provider_networks:
+    - network:
+        group_binds:
+          - all_containers
+          - hosts
+        type: "raw"
+        container_bridge: "br-mgmt"
+        container_interface: "eth1"
+        ip_from_q: "container"
+    - network:
+        group_binds:
+          - neutron_linuxbridge_agent
+        container_bridge: "br-vxlan"
+        container_interface: "eth1"
+        ip_from_q: "tunnel"
+        type: "vxlan"
+        range: "1:1000"
+        net_name: "vxlan"
+    - network:
+        group_binds:
+          - neutron_linuxbridge_agent
+        container_bridge: "br-vlan"
+        container_interface: "eth11"
+        type: "flat"
+        net_name: "vlan"
+  # Name of load balancer
+  lb_name: JCisOurSavior
+
+# User defined Infrastructure Hosts, this should be a required group
+infra_hosts:
+  infra1:
+    ip: 10.127.83.13
+  infra2:
+    ip: 10.127.83.14
+  infra3:
+    ip: 10.127.83.15
+
+# User defined Compute Hosts, this should be a required group
+compute_hosts:
+  compute1:
+    ip: 10.127.83.16
+  compute2:
+    ip: 10.127.83.3
+  compute3:
+    ip: 10.127.83.5
+  compute4:
+    ip: 10.127.83.6
+
+# User defined Storage Hosts, this should be a required group
+storage_hosts:
+  cinder1:
+    ip: 10.127.83.17
+    # "container_vars" can be set outside of all other options as 
+    # host specific optional variables.
+    container_vars:
+      # If you would like to define a cinder availablility zone this can
+      # be done with the namespaced variable.
+      #cinder_storage_availability_zone: cinderAZ_1
+      # When creating more than ONE availablity zone you should define a
+      # sane default for the system to use when schedulng volume creation.
+      #cinder_default_availability_zone: cinderAZ_1
+      # In this example we are defining what cinder volumes are 
+      # on a given host.
+      cinder_backends:
+        # if the "limit_container_types" argument is set, within 
+        # the top level key of the provided option the inventory
+        # process will perform a string match on the container name with
+        # the value found within the "limit_container_types" argument.
+        # If any part of the string found within the container 
+        # name the options are appended as host_vars inside of inventory.
+        limit_container_types: cinder_volume
+        lvm:
+          volume_group: cinder-volumes
+          volume_driver: cinder.volume.drivers.lvm.LVMISCSIDriver
+          volume_backend_name: LVM_iSCSI
+
+# User defined Logging Hosts, this should be a required group
+log_hosts:
+  logger1:
+    ip: 10.127.83.18
+
+# User defined Networking Hosts, this should be a required group
+network_hosts:
+  network1:
+    ip: 10.127.83.12
+
+haproxy_hosts:
+  haproxy1:
+    ip: 10.127.83.11
