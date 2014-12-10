@@ -45,21 +45,24 @@ function successerator() {
   # Set the initial return value to failure
   false
 
-  # Sometimes a container or two will fail to start on a public cloud bare metal node.
-  # This code segment attempts to start them up before running the playbooks again.
-  # It will try to start the containers after the 4th retry. 
-  if [ ${RETRY} -gt 3 ];then
-    readarray -t stopped_containers <<< "$(lxc-ls -f | grep STOPPED | awk '{print $2}')"
-    for i in "${stopped_containers[@]}"
-    do
-      lxc-start -n $i -d
-    done
-  fi
 
   while [ $? -ne 0 -a ${RETRY} -lt ${MAX_RETRIES} ];do
     RETRY=$((${RETRY}+1))
     $@
   done
+
+  # Sometimes a container or two will fail to start on a public cloud bare metal node.
+  # This code segment attempts to start them up before running the playbooks again.
+  # It will try to start the containers after the 3rd retry. 
+  if [ ${RETRY} -gt 3 ];then
+    readarray -t stopped_containers <<< "$(lxc-ls -f | grep STOPPED | awk '{print $2}')"
+    if [ -n "$stopped_containers" ]
+      for i in "${stopped_containers[@]}"
+      do
+        lxc-start -n $i -d
+      done
+    fi
+  fi
 
   if [ ${RETRY} -eq ${MAX_RETRIES} ];then
     echo "Hit maximum number of retries, giving up..."
@@ -358,10 +361,10 @@ iface br-mgmt inet static
     bridge_waitport 0
     bridge_fd 0
     # Notice the bridge port is the vlan tagged interface
-    bridge_ports bond0.101
-    address 104.130.21.129
+    bridge_ports eth0
+    address $(ifconfig eth0 | awk '/inet addr/{print substr($2,6)}')
     netmask 255.255.255.0
-    gateway 104.130.21.1
+    gateway $(ip r | grep 'default via' | awk '{print $3}')
     up ip addr add 172.29.236.100/22 dev \$IFACE label \$IFACE:0
 
 auto br-vxlan
@@ -371,7 +374,7 @@ iface br-vxlan inet static
     bridge_fd 0
     bridge_ports none
     address 172.29.240.100
-    netmask 255.255.252.0
+    netmask 255.255.255.0
 
 auto br-vlan
 iface br-vlan inet manual
