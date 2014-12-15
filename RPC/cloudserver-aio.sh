@@ -287,7 +287,7 @@ global_overrides:
   # Internal Management vip address
   internal_lb_vip_address: 172.29.236.100
   # External DMZ VIP address
-  external_lb_vip_address: 10.200.200.146
+  external_lb_vip_address: 172.29.236.100
   # Bridged interface to use with tunnel type networks
   tunnel_bridge: "br-vxlan"
   # Bridged interface to build containers with
