@@ -56,7 +56,7 @@ function successerator() {
   # It will try to start the containers after the 3rd retry. 
   if [ ${RETRY} -gt 3 ];then
     readarray -t stopped_containers <<< "$(lxc-ls -f | grep STOPPED | awk '{print $2}')"
-    if [ -n "$stopped_containers" ]
+    if [ -n "$stopped_containers" ];then
       for i in "${stopped_containers[@]}"
       do
         lxc-start -n $i -d
@@ -305,8 +305,8 @@ global_overrides:
     - network:
         group_binds:
           - neutron_linuxbridge_agent
-        container_bridge: "br-mgmt"
-        container_interface: "eth1"
+        container_bridge: "br-vxlan"
+        container_interface: "eth10"
         ip_from_q: "tunnel"
         type: "vxlan"
         range: "1:1000"
@@ -314,8 +314,8 @@ global_overrides:
     - network:
         group_binds:
           - neutron_linuxbridge_agent
-        container_bridge: "br-mgmt"
-        container_interface: "eth1"
+        container_bridge: "br-vlan"
+        container_interface: "eth11"
         type: "flat"
         net_name: "vlan"
   # Name of load balancer
@@ -361,8 +361,8 @@ iface br-mgmt inet static
     bridge_waitport 0
     bridge_fd 0
     # Notice the bridge port is the vlan tagged interface
-    bridge_ports eth0
-    address $(ifconfig eth0 | awk '/inet addr/{print substr($2,6)}')
+    bridge_ports em1
+    address $(ifconfig em1 | awk '/inet addr/{print substr($2,6)}')
     netmask 255.255.255.0
     gateway $(ip r | grep 'default via' | awk '{print $3}')
     up ip addr add 172.29.236.100/22 dev \$IFACE label \$IFACE:0
@@ -372,7 +372,7 @@ iface br-vxlan inet static
     bridge_stp off
     bridge_waitport 0
     bridge_fd 0
-    bridge_ports none
+    bridge_ports em3
     address 172.29.240.100
     netmask 255.255.255.0
 
@@ -382,7 +382,7 @@ iface br-vlan inet manual
     bridge_waitport 0
     bridge_fd 0
     # Notice this bridge port is an Untagged host interface
-    bridge_ports none
+    bridge_ports em2
 
 auto br-storage
 iface br-storage inet static
