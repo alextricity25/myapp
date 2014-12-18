@@ -3,6 +3,12 @@
 #$1 = start of Ip allocation range for external subnet
 #$2 = end of ip allocation range for external subnet
 
+if [ $# -ne 2 ];
+  then
+  echo "./makeNeutronStuff.sh <last octect of begining of ip range> <end of ip range>"
+  exit;
+fi
+
 
 #This script will create a neutron physical provider network for the 192.168.100.0/24 network in the SAT6 lab. It will also create a tenant network configured to use vxlan tunnels. 
 
