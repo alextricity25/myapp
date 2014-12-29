@@ -16,7 +16,7 @@ set -e -u -v -x
 
 REPO_URL=${REPO_URL:-"https://github.com/stackforge/os-ansible-deployment.git"}
 REPO_BRANCH=${REPO_BRANCH:-"master"}
-WORKING_FOLDER=${WORKING_FOLDER:-"/opt/stackforge/os-ansible-deployment"}
+WORKING_FOLDER=${WORKING_FOLDER:-"/opt/ansible-lxc-rpc"}
 
 # install git so that we can fetch the repo
 apt-get update && apt-get install -y git
