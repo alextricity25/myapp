@@ -31,3 +31,5 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Manage your neutron networks in bluk")
     parser.add_argument("--admin-token", type=str, help="Keystone admin auth token")
     parser.add_argument("--source-file", type=str, help="Your environments source file")  
+
+    parser.parse_args()
