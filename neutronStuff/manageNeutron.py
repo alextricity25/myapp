@@ -1,40 +1,121 @@
+#!/usr/bin/python
 import argparse
+import time
 import os
 import subprocess
 import pprint
-#from neutronclient.neutron import client
+import json
 from neutronclient.v2_0 import client
 
 
 # Global variables
 neutronClient = None
 
+# Global Constant, can be set by the admin running the script to
+# change network labels.
+PHYSICAL_NETWORK_LABEL = "vlan"
+PHYSICAL_NETWORK_NAME = "external-net"
+PHYSICAL_SUBNET_NAME = "external-subnet"
 
-# Still doesn't load environment variables, needs work
+TENANT_NETWORK_NAME = "testnet1"
+TENANT_SUBNET_NAME = "testsubnet1"
+
+NEUTRON_ROUTER_NAME = "neutron-router"
+NEUTRON_ROUTER_GATEWAY_IP = "192.168.100.1"
+
+FLOATING_IP_START = "192.168.100.71"
+FLOATING_IP_END = "192.168.100.90"
+
+
 def load_source(source_file):
-        # Running subprocess..
-	command = ['bash','-c', 'source %s' % source_file]
-        subprocess.Popen(command, stdout=subprocess.PIPE)
+    # Running subprocess..
+    command = ['bash', '-c', 'source %s && env' % source_file]
+    process = subprocess.Popen(command, stdout=subprocess.PIPE)
+    for line in process.stdout:
+        (key, _, value) = line.partition("=")
+        os.environ[key] = value.rstrip()
+    process.communicate()
+
 
 def create(args):
-	global neutronClient
-	print "You're about to create something"
+    global neutronClient
+    print "You're about to create something"
+    print args.all
+    # The --all flag has been used, create default
+    # networks according to global constants above
+    if args.all:
+        # The JSON object representation of the external network
+        network = {
+            "network": {
+                "name": "external-net",
+                "provider:physical_network": PHYSICAL_NETWORK_LABEL,
+                "provider:network_type": "flat",
+                "shared": True,
+                "router:external": True
+            }
+        }
+        response = neutronClient.create_network(network)
+        print "Created external-net network"
+
+        #Retriving the UUID of the external-net network
+        external_net_id = response['network']['id']
+
+        # The JSON object representation of the external subnet
+        external_subnet = {
+            "subnet": {
+                "name": "external-subnet",
+                "network_id": external_net_id,
+                "ip_version": 4,
+                "gateway_ip": "192.168.100.1",
+                "cidr": "192.168.100.0/24",
+                "allocation_pools": [{"start": FLOATING_IP_START, "end": FLOATING_IP_END}]
+            }
+        }
+        neutronClient.create_subnet(external_subnet)
+        print "Created external-subnet network"
+
+        _create_tenant_network()
+
+    else:
+        print "This function has not been implented yet, try running with the -a option or -h option for help"
+
 
 def delete(args):
-	#testing
-	test = "test"
-	print "You're about to delete something.."
+    print "You're about to delete something.."
+
+def debug(args):
+    print "This program will eventually help with debugging environments and such..."
+
 
 # List all the networks. Mainly for development testing purposes.
 def list(args):
-	global neutronClient
-	networks = neutronClient.list_networks()
-	pprint.pprint(networks)
+    global neutronClient
+    networks = neutronClient.list_networks()
+    pprint.pprint(networks)
+    for nets in networks['networks']:
+        print nets['name']
+
+#Private helper functions
+# This function creates a vxlan tenant network with it's corresponding subnet
+def _create_tenant_network(subnet_cidr="10.10.10.0/24", net_name=TENANT_NETWORK_NAME, subnet_name=TENANT_SUBNET_NAME):
+    global neutronClient
+
+    # The JSON object representation of the tenant network
+    tenant_network = {
+        "network": {
+            "name": net_name,
+            "provider:network_type": "vxlan",
+        }
+    }
+    response = neutronClient.create_network(tenant_network)
+    print "Created %s network" % net_name
+    #Retriving the UUID of the tenant_network
+    tenant_network_id = response['network']['id']
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Manage your neutron networks in bulk. First, source openrc.")
-    parser.add_argument("--source_file", type=str, required=True, help="Your environments source file")  
-    
+    parser.add_argument("--source_file", type=str, required=True, help="Your environments source file")
+
     subparsers = parser.add_subparsers(title='subcommands')
 
     parser_create = subparsers.add_parser('create', help='Create the neutron networks in our SAT6 lab')
