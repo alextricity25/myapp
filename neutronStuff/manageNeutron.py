@@ -74,14 +74,50 @@ def create(args):
         neutronClient.create_subnet(external_subnet)
         print "Created external-subnet network"
 
-        _create_tenant_network()
+        tenant_subnet_id = _create_tenant_network()
+
+        #Creating the router
+        _create_router(tenant_subnet_id, external_net_id)
 
     else:
         print "This function has not been implented yet, try running with the -a option or -h option for help"
 
 
 def delete(args):
-    print "You're about to delete something.."
+    global neutronClient
+    # Getting IDs of all the resources and mapping them out, since
+    # the neutron api only accepts ids and not resource names.
+    networks = neutronClient.list_networks()
+    subnets = neutronClient.list_subnets()
+    routers = neutronClient.list_routers()
+    network_map = {}
+    subnet_map = {}
+    router_map = {}
+
+    for network in networks['networks']:
+        network_map[network['name']] = network['id']
+
+    for subnet in subnets['subnets']:
+        subnet_map[subnet['name']] = subnet['id']
+
+    for router in routers['routers']:
+        router_map[router['name']] = router['id']
+
+    print "Make sure all instances or associated neutron ports are deleted before running this operation"
+    # If -a options is set, remove the default networking components
+    if args.all:
+
+        # Removing the gateway from the default router
+        neutronClient.remove_gateway_router(router_map[NEUTRON_ROUTER_NAME])
+        print "Removed gateway from %s" % NEUTRON_ROUTER_NAME
+        # Remvoing tenant network interface from the default router
+        neutronClient.remove_interface_router(router_map[NEUTRON_ROUTER_NAME], {"subnet_id": subnet_map[TENANT_SUBNET_NAME]})
+        print "Removed tenant network interface from router"
+
+        #Deleting the router
+        neutronClient.delete_router(router_map[NEUTRON_ROUTER_NAME])
+        print "Deleted router %s" % NEUTRON_ROUTER_NAME
+
 
 def debug(args):
     print "This program will eventually help with debugging environments and such..."
@@ -111,6 +147,54 @@ def _create_tenant_network(subnet_cidr="10.10.10.0/24", net_name=TENANT_NETWORK_
     print "Created %s network" % net_name
     #Retriving the UUID of the tenant_network
     tenant_network_id = response['network']['id']
+
+    # The JSON object representation of the tenant subnet
+    tenant_subnet = {
+        "subnet": {
+            "name": "testsubnet1",
+            "network_id": tenant_network_id,
+            "ip_version": 4,
+            "cidr": subnet_cidr,
+            "dns_nameservers": ["8.8.8.8", "4.2.2.2"]
+        }
+    }
+    tenant_subnet_id = neutronClient.create_subnet(tenant_subnet)['subnet']['id']
+    print "Created external-subnet"
+
+    #Returning tenant subnet id because it's needed for attaching subnet to router
+    return tenant_subnet_id
+
+
+#This function creates a neutron router, sets it's gateway,
+# and attaches a subnet interface
+def _create_router(tenant_subnet_id, external_net_id, router_name=NEUTRON_ROUTER_NAME, gateway_net=PHYSICAL_NETWORK_NAME):
+    global neutronClient
+
+    #Json object for the router
+    router = {
+        "router": {
+            "name": router_name,
+            "admin_state_up": True
+        }
+    }
+    #Creating the router
+    response = neutronClient.create_router(router)
+
+    #Get ID of router
+    router_id = response['router']['id']
+
+    #Json object representing the gateway for the router
+    external_gateway = {
+            "network_id": external_net_id
+        }
+
+    #Adding gateway to router
+    neutronClient.add_gateway_router(router_id, external_gateway)
+
+    #Adding tenant subnet inetrface to router
+    neutronClient.add_interface_router(router_id, {"subnet_id": tenant_subnet_id})
+
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Manage your neutron networks in bulk. First, source openrc.")
