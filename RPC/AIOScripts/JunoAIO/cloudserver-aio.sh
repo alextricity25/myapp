@@ -15,7 +15,7 @@
 set -e -u -v -x
 
 REPO_URL=${REPO_URL:-"https://github.com/stackforge/os-ansible-deployment.git"}
-REPO_BRANCH=${REPO_BRANCH:-"master"}
+REPO_BRANCH=${REPO_BRANCH:-"icehouse"}
 WORKING_FOLDER=${WORKING_FOLDER:-"/opt/ansible-lxc-rpc"}
 
 # install git so that we can fetch the repo

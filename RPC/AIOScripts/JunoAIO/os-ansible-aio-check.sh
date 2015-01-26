@@ -209,28 +209,28 @@ cat > /etc/rpc_deploy/rpc_user_config.yml <<EOF
 ---
 environment_version: $(md5sum /etc/rpc_deploy/rpc_environment.yml | awk '{print $1}')
 cidr_networks:
-  container: 172.29.236.0/22
-  tunnel: 172.29.240.0/22
+  container: 172.16.236.0/22
+  tunnel: 172.16.240.0/22
 used_ips:
-  - 172.29.236.1,172.29.236.50
-  - 172.29.236.100,172.29.236.150
-  - 172.29.240.100,172.29.240.150
-  - 172.29.244.1,172.29.244.50
+  - 172.16.236.1,172.16.236.50
+  - 172.16.236.100,172.16.236.150
+  - 172.16.240.100,172.16.240.150
+  - 172.16.244.1,172.16.244.50
 global_overrides:
   rpc_repo_url: ${FROZEN_REPO_URL}
-  internal_lb_vip_address: 172.29.236.100
+  internal_lb_vip_address: 10.127.83.3
   external_lb_vip_address: $(ip -o -4 addr show dev em1 | awk -F '[ /]+' '/global/ {print $4}')
   tunnel_bridge: "br-vlan"
   management_bridge: "br-mgmt"
 infra_hosts:
   aio1:
-    ip: 172.29.236.100
+    ip: 172.16.236.100
 compute_hosts:
   aio1:
-    ip: 172.29.236.100
+    ip: 172.16.236.100
 storage_hosts:
   aio1:
-    ip: 172.29.236.100
+    ip: 172.16.236.100
     container_vars:
       cinder_backends:
         limit_container_types: cinder_volume
@@ -240,13 +240,13 @@ storage_hosts:
           volume_backend_name: LVM_iSCSI
 log_hosts:
   aio1:
-    ip: 172.29.236.100
+    ip: 172.16.236.100
 network_hosts:
   aio1:
-    ip: 172.29.236.100
+    ip: 172.16.236.100
 haproxy_hosts:
   aio1:
-    ip: 172.29.236.100
+    ip: 172.16.236.100
 EOF
 
 cat > /etc/rpc_deploy/conf.d/provider_networks.yml <<EOF
@@ -263,7 +263,7 @@ global_overrides:
           - hosts
     - network:
         container_bridge: "br-vlan"
-        container_interface: "eth10"
+        container_interface: "eth11"
         ip_from_q: "tunnel"
         type: "vxlan"
         range: "1:1000"
@@ -325,7 +325,7 @@ iface br-mgmt inet static
     address $(ifconfig em1 | awk '/inet addr/{print substr($2,6)}')
     netmask 255.255.255.0
     gateway $(ip r | grep 'default via' | awk '{print $3}')
-    up ip addr add 172.29.236.100/22 dev \$IFACE label \$IFACE:0
+    up ip addr add 172.16.236.100/22 dev \$IFACE label \$IFACE:0
 
 auto br-vxlan
 iface br-vxlan inet manual
@@ -341,7 +341,7 @@ iface br-vlan inet static
     bridge_fd 0
     # Notice this bridge port is an Untagged host interface
     bridge_ports em2
-    address 172.29.240.100
+    address 172.16.240.100
     netmask 255.255.252.0
     
 EOF
