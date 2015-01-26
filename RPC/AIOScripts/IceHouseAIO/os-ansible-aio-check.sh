@@ -259,17 +259,17 @@ cat > /etc/rpc_deploy/rpc_user_config.yml <<EOF
 ---
 environment_version: $(md5sum /etc/rpc_deploy/rpc_environment.yml | awk '{print $1}')
 cidr_networks:
-  container: 172.29.236.0/22
-  tunnel: 172.29.240.0/22
-  storage: 172.29.244.0/22
+  container: 172.16.236.0/22
+  tunnel: 172.16.240.0/22
 used_ips:
-  - 172.29.236.1,172.29.236.50
-  - 172.29.244.1,172.29.244.50
+  - 172.16.236.1,172.16.236.50
+  - 172.16.236.100,172.16.236.120
+  - 172.16.244.1,172.16.244.50
 global_overrides:
   rpc_repo_url: ${FROZEN_REPO_URL}
-  internal_lb_vip_address: 172.29.236.100
-  external_lb_vip_address: $(ip -o -4 addr show dev eth0 | awk -F '[ /]+' '/global/ {print $4}')
-  tunnel_bridge: "br-vxlan"
+  internal_lb_vip_address: 10.127.83.3 
+  external_lb_vip_address: 10.127.83.3 
+  tunnel_bridge: "br-vlan"
   management_bridge: "br-mgmt"
   provider_networks:
     - network:
@@ -281,8 +281,8 @@ global_overrides:
           - all_containers
           - hosts
     - network:
-        container_bridge: "br-vxlan"
-        container_interface: "eth10"
+        container_bridge: "br-vlan"
+        container_interface: "eth11"
         ip_from_q: "tunnel"
         type: "vxlan"
         range: "1:1000"
@@ -296,24 +296,6 @@ global_overrides:
         net_name: "vlan"
         group_binds:
           - neutron_linuxbridge_agent
-    - network:
-        container_bridge: "br-vlan"
-        container_interface: "eth11"
-        type: "vlan"
-        range: "1:1"
-        net_name: "vlan"
-        group_binds:
-          - neutron_linuxbridge_agent
-    - network:
-        container_bridge: "br-storage"
-        container_interface: "eth2"
-        ip_from_q: "storage"
-        type: "raw"
-        group_binds:
-          - glance_api
-          - cinder_api
-          - cinder_volume
-          - nova_compute
 EOF
 
 if [ "${DEPLOY_SWIFT}" == "yes" ]; then
@@ -341,23 +323,23 @@ global_overrides:
           default: True
 swift-proxy_hosts:
   aio1:
-    ip: 172.29.236.100
+    ip: 172.16.236.100
 swift_hosts:
   aio1:
-    ip: 172.29.236.100
+    ip: 172.16.236.100
 EOF
 fi
 
 cat >> /etc/rpc_deploy/rpc_user_config.yml <<EOF
 infra_hosts:
   aio1:
-    ip: 172.29.236.100
+    ip: 172.16.236.100
 compute_hosts:
   aio1:
-    ip: 172.29.236.100
+    ip: 172.16.236.100
 storage_hosts:
   aio1:
-    ip: 172.29.236.100
+    ip: 172.16.236.100
     container_vars:
       cinder_backends:
         limit_container_types: cinder_volume
@@ -367,13 +349,13 @@ storage_hosts:
           volume_backend_name: LVM_iSCSI
 log_hosts:
   aio1:
-    ip: 172.29.236.100
+    ip: 172.16.236.100
 network_hosts:
   aio1:
-    ip: 172.29.236.100
+    ip: 172.16.236.100
 haproxy_hosts:
   aio1:
-    ip: 172.29.236.100
+    ip: 172.16.236.100
 EOF
 
 cat > /etc/network/interfaces.d/aio-bridges.cfg <<EOF
@@ -384,34 +366,27 @@ iface br-mgmt inet static
     bridge_waitport 0
     bridge_fd 0
     # Notice the bridge port is the vlan tagged interface
-    bridge_ports none
-    address 172.29.236.100
+    bridge_ports em1
+    address $(ifconfig em1 | awk '/inet addr/{print substr($2,6)}')
     netmask 255.255.252.0
+    gateway $(ip r | grep 'default via' | awk '{print $3}')
+    up ip addr add 172.16.236.100/22 dev \$IFACE label \$IFACE:0
 
 auto br-vxlan
-iface br-vxlan inet static
+iface br-vxlan inet manual
     bridge_stp off
     bridge_waitport 0
     bridge_fd 0
     bridge_ports none
-    address 172.29.240.100
-    netmask 255.255.252.0
 
 auto br-vlan
-iface br-vlan inet manual
+iface br-vlan inet static
     bridge_stp off
     bridge_waitport 0
     bridge_fd 0
     # Notice this bridge port is an Untagged host interface
-    bridge_ports none
-
-auto br-storage
-iface br-storage inet static
-    bridge_stp off
-    bridge_waitport 0
-    bridge_fd 0
-    bridge_ports none
-    address 172.29.244.100
+    bridge_ports em2
+    address 172.16.240.100
     netmask 255.255.252.0
 EOF
 
