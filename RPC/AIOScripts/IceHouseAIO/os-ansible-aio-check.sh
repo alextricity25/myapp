@@ -118,13 +118,14 @@ get_instance_info
 # Flush all the iptables rules set by openstack-infra
 iptables -F
 iptables -X
-iptables -t nat -F
-iptables -t nat -X
 iptables -t mangle -F
 iptables -t mangle -X
 iptables -P INPUT ACCEPT
 iptables -P FORWARD ACCEPT
 iptables -P OUTPUT ACCEPT
+
+# Add NAT rule for containers
+iptables -t nat -A POSTROUTING -s 10.0.3.0/24 ! -d 10.0.3.0/24 -j MASQUERADE
 
 # Ensure newline at end of file (missing on Rackspace public cloud Trusty image)
 if ! cat -E /etc/ssh/sshd_config | tail -1 | grep -q "\$$"; then
