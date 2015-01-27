@@ -16,13 +16,14 @@ set -e -u -v -x
 
 REPO_URL=${REPO_URL:-"https://github.com/stackforge/os-ansible-deployment.git"}
 REPO_BRANCH=${REPO_BRANCH:-"icehouse"}
-WORKING_FOLDER=${WORKING_FOLDER:-"/opt/os-ansible-deployment"}
+WORKING_FOLDER=${WORKING_FOLDER:-"/opt/ansible-lxc-rpc"}
 
 # install git so that we can fetch the repo
 apt-get update && apt-get install -y git
 
 # fetch the repo
 git clone -b ${REPO_BRANCH} ${REPO_URL} ${WORKING_FOLDER}/
+
 
 # put an motd in place to help the user know how to restart galera after reboot
 cat > /etc/update-motd.d/20-openstack<< EOF
@@ -38,5 +39,4 @@ EOF
 chmod +x /etc/update-motd.d/20-openstack
 
 # run the same aio build script that is used in the OpenStack CI pipeline
-cd ${WORKING_FOLDER}
-./scripts/os-ansible-aio-check.sh
+./os-ansible-aio-check.sh
