@@ -9,6 +9,8 @@ fi
 IP_ADDRS=$1
 for i in $(eval echo {1..$2}); do
 	echo "  compute$i:"
-	echo "    ip:10.241.51.$IP_ADDRS"
+	echo "    ip:10.127.83.$IP_ADDRS"
 	IP_ADDRS=$(( $IP_ADDRS + 1 ))
 done; 
+
+

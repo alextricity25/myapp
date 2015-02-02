@@ -369,7 +369,7 @@ iface br-mgmt inet static
     # Notice the bridge port is the vlan tagged interface
     bridge_ports em1
     address $(ifconfig em1 | awk '/inet addr/{print substr($2,6)}')
-    netmask 255.255.252.0
+    netmask 255.255.255.0
     gateway $(ip r | grep 'default via' | awk '{print $3}')
     up ip addr add 172.16.236.100/22 dev \$IFACE label \$IFACE:0
 
