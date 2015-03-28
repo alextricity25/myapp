@@ -1,0 +1,4 @@
+These are scripts to generate the network interfaces file 
+for a build that emulates the use of the br-vlan, br-vxlan, and br-storage bridges
+as they are meant to be used. It uses veth pairs to connect the bridges without
+a real interface to a bridge with a physical interface. 
