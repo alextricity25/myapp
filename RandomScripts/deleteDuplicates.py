@@ -49,7 +49,7 @@ def main(argv):
   	print dirname; 
   	#Iterating through the files in each directory
   	for file in files: 
-  		deleteduplicate(file,dirname)
+  		deleteduplicate(file,dirname,force_yes)
   deletesamedir(force_yes)
   deleteConflicted(force_yes)
 
@@ -57,8 +57,11 @@ def main(argv):
 
 
 
-def deleteduplicate(file,dirname): 
+def deleteduplicate(file,dirname, force_yes):
+
+	#Variables 
 	deletedFile = "" 
+
 	for dirname2, files in MAP.iteritems():
 		
 		for file2 in files:
@@ -68,7 +71,6 @@ def deleteduplicate(file,dirname):
 				# Delete the file in the most shallow directory, preserving the one i
 				# in the deepest directory
 				if len(dirname) < len(dirname2):
-					print "deletedFile: ", deletedFile
 					path = "".join([dirname,"/",file])
 					path2 = "".join([dirname2,"/",file])
 					if path == deletedFile: 
@@ -78,8 +80,10 @@ def deleteduplicate(file,dirname):
 							
 						print "Found duplicate. One in ", path, " and one in ", path2
 						print "Do you want to delete ", path ,"?"
-						answer = raw_input("(Yes/No)")
-						if answer == "Yes":
+						answer = ''
+						if not force_yes:
+							answer = raw_input("(Yes/No)")
+						if answer == "Yes" or force_yes:
 							deletedFile = path
 							remove(path)
 							print "Deleting " , path
@@ -122,4 +126,3 @@ def deleteConflicted(force_yes):
 
 if __name__ == "__main__":
   main(sys.argv[1:])
-
