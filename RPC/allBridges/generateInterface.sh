@@ -2,8 +2,8 @@
 
 #Change the IP address to match yours
 
-TUNNEL_IP=107
-CONTAINER_IP=107
+TUNNEL_IP=100
+CONTAINER_IP=100
 if [ $# -eq 0 ]
 then
 	echo "./generateInterfaces <iplist.txt>"
@@ -25,27 +25,37 @@ iface em1 inet manual
 
 auto br-mgmt
 iface br-mgmt inet static
-    pre-up ip link add vxlan-veth0 type veth peer name vxlan-veth1
-    pre-up ip link add storage-veth0 type veth peer name storage-veth1
-    pre-down ip link del dev vxlan-veth0
-    pre-down ip link del dev storage-veth0
+    #Create veth pair, don't bomb if already exists
+    pre-up ip link add br-vxlan-veth type veth peer name em15 || true
+    pre-up ip link add br-storage-veth type veth peer name em16 || true
+    # Set both ends UP
+    pre-up ip link set br-vxlan-veth up
+    pre-up ip link set em15 up
+    pre-up ip link set br-storage-veth up
+    pre-up ip link set em16 up
+    #Set bridge UP/DOWN
+    up ip link set \$IFACE up
+    down ip link set \$IFACE down
+    #delete veth pair on DOWN
+    post-down ip link del br-vxlan-veth || true
+    post-down ip link del br-storage-veth || true
+    #Bridge options. Also, creating a second fake network as a subinterface
+    #for the containers. This network does not have a gateway. 
     bridge_stp off
     bridge_waitport 0
     bridge_fd 0
-    bridge_ports em1 vxlan-veth0 storage-veth0
+    bridge_ports em1 br-vxlan-veth br-storage-veth
     address $i
     netmask 255.255.255.0
     gateway 10.127.83.1
     up ip addr add 172.16.236.$CONTAINER_IP/24 dev \$IFACE label \$IFACE:0
 
 auto br-vxlan
-iface br-vxlan inet static
-    address 172.16.237.$TUNNEL_IP
-    netmask 255.255.255.0
+iface br-vxlan inet manual
     bridge_stp off
     bridge_waitport 0
     bridge_fd 0
-    bridge_ports vxlan-veth1
+    bridge_ports em15
 
 auto br-vlan
 iface br-vlan inet manual
@@ -56,13 +66,11 @@ iface br-vlan inet manual
     bridge_ports em2
 
 auto br-storage
-iface br-storage inet static
-    address 172.16.238.$TUNNEL_IP
-    netmask 255.255.255.0
+iface br-storage inet manual
     bridge_stop off
     bridge_waitport 0
     bridge_fd 0
-    bridge_ports storage-veth1
+    bridge_ports em16
 
 EOF
 
