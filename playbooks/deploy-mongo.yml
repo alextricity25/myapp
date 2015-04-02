@@ -1,0 +1,15 @@
+- hosts: dbservers
+  roles:
+    - ansible-role-mongodb
+  vars: 
+    mongodb_conf_auth: true
+    mongodb_users:
+      - {
+        name: ceilometer,
+        password: secrete,
+        roles: readWrite,
+        database: ceilometer
+    }
+    mongodb_login_host: 104.130.244.26
+    mongodb_replication_params:
+      - { host_name: 104.130.244.26, host_port: "{{ mongodb_conf_port }}", host_type: replica }
